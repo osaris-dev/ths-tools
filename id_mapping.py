@@ -16,8 +16,7 @@ limitations under the License.
 
 import requests
 from requests.auth import HTTPBasicAuth
-import ast
-from json import dump
+import json
 import time
 import click
 from datetime import datetime
@@ -31,19 +30,36 @@ transfer_id_length = 36
 
 # cmd arguments
 @click.command()
-@click.option('--certname', '-c', prompt='certificate name',
-              help='name of user certificate (e.g. mmuster.crt, mmuster-decrypted.key -> --certname mmuster)')
-@click.option('--baluser', '-bu', prompt='BAL user',
-              help='THS BAL username')
-@click.option('--balpassword', '-bp', prompt='BAL password', help='BAL password')
-@click.option('--apikey', '-ak', prompt='API password', help='Enter API Key')
-@click.option('--host', '-h', default="basic-test.ths.dzhk.med.uni-greifswald.de", help='Enter host name')
-def cmd_args(certname, baluser, balpassword, apikey, host):
-    date = datetime.today().strftime("%Y%m%d")
+@click.option('--verbose/--no-verbose', '-v', default=True, help='output debug information')
+@click.option('--in-file', type=click.Path(exists=True), help='input file with PSNs')
+@click.option('--in-file-type', type=click.Choice(['json', 'text']), default="json", help='input file type')
+@click.option('--out-file', type=click.Path(), help='output file with mapping')
+@click.option('--out-file-type', type=click.Choice(['json', 'text']), default="json", help='output file type')
+@click.option('--host', default="basic-test.ths.dzhk.med.uni-greifswald.de", help='Enter host name')
+@click.option('--ssl-cert', help='name of user certificate (e.g. mmuster.crt)')
+@click.option('--ssl-key', help='name of user certificate (e.g. mmuster-decrypted.key)')
+@click.option('--bal-auth/--no-bal-auth', default=True, help='enable/disable BAL auth')
+@click.option('--bal-user', help='THS BAL username')
+@click.option('--bal-pass', help='BAL password')
+@click.option('--api-key', help='API-Key')
+@click.option('--session-user-id', default="test")
+@click.option('--session-user-name', default="test")
+@click.option('--session-user-title', default="")
+@click.option('--session-user-firstname', default="test")
+@click.option('--session-user-lastname', default="test")
+@click.option('--session-user-role', default="test")
+@click.option('--token-study-id', default="noStudy")
+@click.option('--token-study_name', default="noStudy")
+@click.option('--token-event', default="acc_temp_merge")
+@click.option('--token-reason', default="acc_temp_merge")
+@click.option('--token-target_type', default="accounting")
+@click.option('--patient-identifier-domain', default="temp", help='output debug information')
+def main(verbose, host, in_file, in_file_type, out_file, out_file_type, ssl_cert, ssl_key, bal_auth, bal_user, bal_pass, api_key, session_user_id, session_user_name, session_user_title, session_user_firstname, session_user_lastname, session_user_role, token_study_id, token_study_name, token_event, token_reason, token_target_type, patient_identifier_domain):
+    
     # initialize config
     config = {
         "header": {
-            "apiKey": apikey,
+            "apiKey": api_key,
             "Content-Type": "application/json; charset=utf-8",
             "Host": host
         },
@@ -53,12 +69,12 @@ def cmd_args(certname, baluser, balpassword, apikey, host):
                 {
                     "fields":
                         {
-                            "user_id": "test",
-                            "user_name": "test",
-                            "user_title": "",
-                            "user_firstname": "test",
-                            "user_lastname": "test",
-                            "user_role": "test"
+                            "user_id": session_user_id,
+                            "user_name": session_user_name,
+                            "user_title": session_user_title,
+                            "user_firstname": session_user_firstname,
+                            "user_lastname": session_user_lastname,
+                            "user_role": session_user_role
                         }
                 }
         },
@@ -69,38 +85,59 @@ def cmd_args(certname, baluser, balpassword, apikey, host):
                 {
                     "fields":
                         {
-                            "study_id": "noStudy",
-                            "study_name": "noStudy",
-                            "event": "acc_temp_merge",
-                            "reason": "acc_temp_merge",
-                            "targetType": "accounting"
+                            "study_id": token_study_id,
+                            "study_name": token_study_name,
+                            "event": token_event,
+                            "reason": token_reason,
+                            "targetType": token_target_type
                         }
                 }
         },
         "psn_request_url": f"https://{host}/dzhk/rest/psn/request/",
-        "user_cert": certname,
-        "name": baluser,
-        "login": balpassword,
-        "filename": f"test_transfer_ids/test-transfer-ids-{date}.txt"
+        "bal_auth": bal_auth,
+        "bal_user": bal_user,
+        "bal_pass": bal_pass,
+        "ssl_cert": ssl_cert,
+        "ssl_key": ssl_key,
+        "verbose": verbose,
+        "patient_identifier_domain": patient_identifier_domain,
     }
-    main(config)
 
+    if in_file_type == "json":
+        transfer_id_list = read_in_file_json(in_file)
+    elif in_file_type == "text":
+        transfer_id_list = read_in_file_text(in_file)
+
+    mapping_dict = get_psn_map(transfer_id_list,config)
+
+    if out_file_type == "json":
+        write_out_file_json(mapping_dict, out_file)
+    elif in_file_type == "text":
+        write_out_file_text(mapping_dict, out_file)
+
+    
+
+def ths_post_request(url,json,config):
+    if config["bal_auth"]:
+        auth=HTTPBasicAuth(config["bal_user"], config["bal_pass"])
+    else:
+        auth=None
+    return requests.post(url,
+                      cert=(config["ssl_cert"], config["ssl_key"]),
+                      auth=auth, verify=True,
+                      headers=config["header"], json=json)
 
 def session_request(config):
     # Making a post request
-    r = requests.post(config["session_url"],
-                      cert=(f'cert/{config["user_cert"]}.crt', f'cert/{config["user_cert"]}-decrypted.key'),
-                      auth=HTTPBasicAuth(config["name"], config["login"]), verify=True,
-                      headers=config["header"], json=config["session_params"])
+    r = ths_post_request(config["session_url"],config["session_params"],config)
 
-    print("Session: ")
-    print("Status Code:", r.status_code)
-    print("------------------------\n")
+    if config["verbose"]:
+        print("Session: ")
+        print("Status Code:", r.status_code)
+        print("------------------------\n")
 
-    session_info = r.text
-    # convert string to dictionary
-    d = ast.literal_eval(session_info)
-    session_id = d["sessionId"]
+    session_info = r.json()
+    session_id = session_info["sessionId"]
 
     return session_id
 
@@ -109,18 +146,15 @@ def token_request(config, session_id):
     path = config["session_url"] + session_id + "/tokens"
 
     # Making a post request
-    r = requests.post(path, cert=(f'cert/{config["user_cert"]}.crt', f'cert/{config["user_cert"]}-decrypted.key'),
-                      auth=HTTPBasicAuth(config["name"], config["login"]), verify=True,
-                      headers=config["header"], json=config["token_params"])
+    r = ths_post_request(path, config["token_params"], config)
 
-    print("Token: ")
-    print("Status Code:", r.status_code)
-    print("------------------------\n")
+    if config["verbose"]:
+        print("Token: ")
+        print("Status Code:", r.status_code)
+        print("------------------------\n")
 
-    token_info = r.text
-    # convert string to dictionary
-    d = ast.literal_eval(token_info)
-    token = d["tokenId"]
+    token_info = r.json()
+    token = token_info["tokenId"]
 
     return token
 
@@ -129,20 +163,16 @@ def call_request_PSN(config, token, pm, counter):
     path = config["psn_request_url"] + token
 
     # Making a post request
-    r = requests.post(path, cert=(f'cert/{config["user_cert"]}.crt', f'cert/{config["user_cert"]}-decrypted.key'),
-                      auth=HTTPBasicAuth(config["name"], config["login"]), verify=True,
-                      headers=config["header"], json=pm)
+    r = ths_post_request(path, pm, config)
 
-    print("Request PSN:")
-    print("Status Code:", r.status_code)
-    print("Iteration number: ", counter+1)
-    print("------------------------\n")
+    if config["verbose"]:
+        print("Request PSN:")
+        print("Status Code:", r.status_code)
+        print("Iteration number: ", counter+1)
+        print("------------------------\n")
 
-    psn_info = r.text
-    # convert string to dictionary
-    d = ast.literal_eval(psn_info)
-
-    return [r, d]
+    psn_info = r.json()
+    return [r, psn_info]
 
 
 def zip_dictionaries(dicts):
@@ -157,11 +187,9 @@ def zip_dictionaries(dicts):
     return dd
 
 
-def main(config):
-    filename = config["filename"]
-
+def read_in_file_text(in_file):
     # read in transfer IDs from txt file
-    with open(filename, "r") as file:
+    with open(in_file, "r") as file:
         txt_string = file.read()
 
     transfer_id_list = txt_string.split("\n")
@@ -169,6 +197,15 @@ def main(config):
     for entry in transfer_id_list:
         if len(entry) != transfer_id_length:
             transfer_id_list.remove(entry)
+
+    return transfer_id_list
+
+def read_in_file_json(in_file):
+    # read in transfer IDs from txt file
+    with open(in_file, "r") as file:
+        return json.load(file)
+
+def get_psn_map(transfer_id_list, config):
 
     # split transfer id list into chunks of 100
     id_list_chunks = [transfer_id_list[x:x + max_pseudonyms_per_request] for x in range(0, len(transfer_id_list), max_pseudonyms_per_request)]
@@ -189,7 +226,7 @@ def main(config):
             patients.append({
                         "index": patient_counter,
                         "patientIdentifier": {
-                            "domain": "temp",
+                            "domain": config["patient_identifier_domain"],
                             "name": "PSN",
                             "id": id,
                             "type": "patientPSN"
@@ -236,20 +273,18 @@ def main(config):
         request_counter += 1
 
     # create overall mapping dictionary
-    mapping_dict = zip_dictionaries(dict_list)
+    return zip_dictionaries(dict_list)
 
+def write_out_file_json(mapping_dict, out_file):
     # write dictionary to json file
-    with open("patient_acc/mapping_test.json", "w") as j:
-        dump(mapping_dict, j, indent=2)
+    with open(out_file, "w") as j:
+        json.dump(mapping_dict, j, indent=2)
 
-    """
+def write_out_file_text(mapping_dict, out_file):
     # Alternatively write dictionary to txt file
-    path = "patient_acc/psn_mapping.txt"
-    with open(path, 'w') as f:
+    with open(out_file, 'w') as f:
         for entry in mapping_dict:
             f.write(entry + ": " + mapping_dict[entry] + "\n")
-    """
-
 
 if __name__ == "__main__":
-    cmd_args()
+    main()
