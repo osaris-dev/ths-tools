@@ -1,0 +1,7 @@
+/cert/
+/json/session_info.json
+/json/token_info.json
+/patient_acc/psn_info.json
+/patient_acc/psn_mapping.txt
+/patient_acc/mapping_test.json
+/test_transfer_ids/
