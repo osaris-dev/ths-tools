@@ -108,14 +108,12 @@ def main(verbose, host, in_file, in_file_type, out_file, out_file_type, ssl_cert
     elif in_file_type == "text":
         transfer_id_list = read_in_file_text(in_file)
 
-    mapping_dict = get_psn_map(transfer_id_list,config)
+    mapping_dict = ths_get_psn_map(transfer_id_list,config)
 
     if out_file_type == "json":
         write_out_file_json(mapping_dict, out_file)
     elif in_file_type == "text":
         write_out_file_text(mapping_dict, out_file)
-
-    
 
 def ths_post_request(url,json,config):
     if config["bal_auth"]:
@@ -127,13 +125,14 @@ def ths_post_request(url,json,config):
                       auth=auth, verify=True,
                       headers=config["header"], json=json)
 
-def session_request(config):
+def ths_session_request(config):
     # Making a post request
     r = ths_post_request(config["session_url"],config["session_params"],config)
 
     if config["verbose"]:
         print("Session: ")
         print("Status Code:", r.status_code)
+        print(r.text)
         print("------------------------\n")
 
     session_info = r.json()
@@ -142,7 +141,7 @@ def session_request(config):
     return session_id
 
 
-def token_request(config, session_id):
+def ths_token_request(config, session_id):
     path = config["session_url"] + session_id + "/tokens"
 
     # Making a post request
@@ -151,6 +150,7 @@ def token_request(config, session_id):
     if config["verbose"]:
         print("Token: ")
         print("Status Code:", r.status_code)
+        print(r.text)
         print("------------------------\n")
 
     token_info = r.json()
@@ -159,7 +159,7 @@ def token_request(config, session_id):
     return token
 
 
-def call_request_PSN(config, token, pm, counter):
+def ths_call_request_PSN(config, token, pm, counter):
     path = config["psn_request_url"] + token
 
     # Making a post request
@@ -169,6 +169,7 @@ def call_request_PSN(config, token, pm, counter):
         print("Request PSN:")
         print("Status Code:", r.status_code)
         print("Iteration number: ", counter+1)
+        print(r.text)
         print("------------------------\n")
 
     psn_info = r.json()
@@ -205,7 +206,7 @@ def read_in_file_json(in_file):
     with open(in_file, "r") as file:
         return json.load(file)
 
-def get_psn_map(transfer_id_list, config):
+def ths_get_psn_map(transfer_id_list, config):
 
     # split transfer id list into chunks of 100
     id_list_chunks = [transfer_id_list[x:x + max_pseudonyms_per_request] for x in range(0, len(transfer_id_list), max_pseudonyms_per_request)]
@@ -234,15 +235,15 @@ def get_psn_map(transfer_id_list, config):
                     })
             patient_counter += 1
 
-        # define parameters to be passed as json in post request (call_request_PSN)
+        # define parameters to be passed as json in post request (ths_call_request_PSN)
         pm = {"patients": patients}
 
         # try request as many times as specified if response does not have a success status code (2xx)
         request_successful = False
         for i in range(retries_before_fail):
-            session_id = session_request(config)
-            token = token_request(config, session_id)
-            psn_infos = call_request_PSN(config, token, pm, request_counter)
+            session_id = ths_session_request(config)
+            token = ths_token_request(config, session_id)
+            psn_infos = ths_call_request_PSN(config, token, pm, request_counter)
 
             i += 1
 
