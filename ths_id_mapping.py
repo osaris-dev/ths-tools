@@ -26,14 +26,12 @@ max_pseudonyms_per_request = 1000
 retries_before_fail = 5
 wait_after_fail = 3
 
-transfer_id_length = 36
-
 # cmd arguments
 @click.command()
 @click.option('--verbose/--no-verbose', '-v', default=True, help='output debug information')
-@click.option('--in-file', type=click.Path(exists=True), help='input file with PSNs')
+@click.option('--in-file', type=click.File('r'), default=sys.stdin, help='input file with PSNs')
 @click.option('--in-file-type', type=click.Choice(['json', 'text']), default="json", help='input file type')
-@click.option('--out-file', type=click.Path(), help='output file with mapping')
+@click.option('--out-file', type=click.File('w'), default=sys.stdout, help='output file with mapping')
 @click.option('--out-file-type', type=click.Choice(['json', 'text']), default="json", help='output file type')
 @click.option('--host', envvar='THS_HOST', default="basic-test.ths.dzhk.med.uni-greifswald.de", help='Enter host name')
 @click.option('--ssl-cert', envvar='THS_SSL_CERT', help='name of user certificate (e.g. mmuster.crt)')
@@ -104,111 +102,16 @@ def main(verbose, host, in_file, in_file_type, out_file, out_file_type, ssl_cert
     }
 
     if in_file_type == "json":
-        transfer_id_list = read_in_file_json(in_file)
+        transfer_id_list = json.load(in_file)
     elif in_file_type == "text":
         transfer_id_list = read_in_file_text(in_file)
 
     mapping_dict = ths_get_psn_map(transfer_id_list,ths_config)
 
     if out_file_type == "json":
-        write_out_file_json(mapping_dict, out_file)
+        json.dump(mapping_dict, out_file, indent=2)
     elif in_file_type == "text":
         write_out_file_text(mapping_dict, out_file)
-
-def error_print(*args, **kwargs):
-    print(*args, file=sys.stderr, **kwargs)
-
-def ths_post_request(url,json,config):
-    if config["bal_auth"]:
-        auth=HTTPBasicAuth(config["bal_user"], config["bal_pass"])
-    else:
-        auth=None
-    return requests.post(url,
-                      cert=(config["ssl_cert"], config["ssl_key"]),
-                      auth=auth, verify=True,
-                      headers=config["header"], json=json)
-
-def ths_session_request(config):
-    # Making a post request
-    r = ths_post_request(config["session_url"],config["session_params"],config)
-
-    if config["verbose"]:
-        error_print("Session: ")
-        error_print("Status Code:", r.status_code)
-        #error_print(r.text)
-        error_print("------------------------\n")
-
-    session_info = r.json()
-    session_id = session_info["sessionId"]
-
-    return session_id
-
-
-def ths_token_request(config, session_id):
-    path = config["session_url"] + session_id + "/tokens"
-
-    # Making a post request
-    r = ths_post_request(path, config["token_params"], config)
-
-    if config["verbose"]:
-        error_print("Token: ")
-        error_print("Status Code:", r.status_code)
-        #error_print(r.text)
-        error_print("------------------------\n")
-
-    token_info = r.json()
-    token = token_info["tokenId"]
-
-    return token
-
-
-def ths_call_request_PSN(config, token, pm, counter):
-    path = config["psn_request_url"] + token
-
-    # Making a post request
-    r = ths_post_request(path, pm, config)
-
-    if config["verbose"]:
-        error_print("Request PSN:")
-        error_print("Status Code:", r.status_code)
-        error_print("Iteration number: ", counter+1)
-        #error_print(r.text)
-        error_print("------------------------\n")
-    
-    psn_info = r.json()
-        
-    return [r, psn_info]
-
-
-def zip_dictionaries(dicts):
-    # takes list of dictionaries and puts all dictionaries together in one
-    from collections import defaultdict
-
-    dd = defaultdict(str)
-
-    for d in dicts:
-        for key, value in d.items():
-            dd[key] = value
-    return dd
-
-
-def read_in_file_text(in_file):
-    # read in transfer IDs from txt file
-    with open(in_file, "r") as file:
-        txt_string = file.read()
-
-    transfer_id_list = txt_string.split("\n")
-
-    for entry in transfer_id_list:
-        if len(entry) != transfer_id_length:
-            transfer_id_list.remove(entry)
-
-    return transfer_id_list
-
-def read_in_file_json(in_file):
-    # read in transfer IDs from txt file
-    with open(in_file, "r") as file:
-        return json.load(file)
 
 def ths_get_psn_map(transfer_id_list, config):
 
@@ -280,16 +183,98 @@ def ths_get_psn_map(transfer_id_list, config):
     # create overall mapping dictionary
     return zip_dictionaries(dict_list)
 
-def write_out_file_json(mapping_dict, out_file):
-    # write dictionary to json file
-    with open(out_file, "w") as j:
-        json.dump(mapping_dict, j, indent=2)
+def ths_session_request(config):
+    # Making a post request
+    r = ths_post_request(config["session_url"],config["session_params"],config)
+
+    if config["verbose"]:
+        error_print("Session: ")
+        error_print("Status Code:", r.status_code)
+        #error_print(r.text)
+        error_print("------------------------\n")
+
+    session_info = r.json()
+    session_id = session_info["sessionId"]
+
+    return session_id
+
+
+def ths_token_request(config, session_id):
+    path = config["session_url"] + session_id + "/tokens"
+
+    # Making a post request
+    r = ths_post_request(path, config["token_params"], config)
+
+    if config["verbose"]:
+        error_print("Token: ")
+        error_print("Status Code:", r.status_code)
+        #error_print(r.text)
+        error_print("------------------------\n")
+
+    token_info = r.json()
+    token = token_info["tokenId"]
+
+    return token
+
+
+def ths_call_request_PSN(config, token, pm, counter):
+    path = config["psn_request_url"] + token
+
+    # Making a post request
+    r = ths_post_request(path, pm, config)
+
+    if config["verbose"]:
+        error_print("Request PSN:")
+        error_print("Status Code:", r.status_code)
+        error_print("Iteration number: ", counter+1)
+        #error_print(r.text)
+        error_print("------------------------\n")
+    
+    psn_info = r.json()
+        
+    return [r, psn_info]
+
+def ths_post_request(url,json,config):
+    if config["bal_auth"]:
+        auth=HTTPBasicAuth(config["bal_user"], config["bal_pass"])
+    else:
+        auth=None
+    return requests.post(url,
+                      cert=(config["ssl_cert"], config["ssl_key"]),
+                      auth=auth, verify=True,
+                      headers=config["header"], json=json)
+
+def zip_dictionaries(dicts):
+    # takes list of dictionaries and puts all dictionaries together in one
+    from collections import defaultdict
+
+    dd = defaultdict(str)
+
+    for d in dicts:
+        for key, value in d.items():
+            dd[key] = value
+    return dd
+
+def read_in_file_text(in_file):
+    # read in transfer IDs from txt file
+    txt_string = in_file.read()
+
+    transfer_id_list = txt_string.split("\n")
+
+    for entry in transfer_id_list:
+        if len(entry) == 0:
+            transfer_id_list.remove(entry)
+
+    return transfer_id_list
 
 def write_out_file_text(mapping_dict, out_file):
     # Alternatively write dictionary to txt file
-    with open(out_file, 'w') as f:
-        for entry in mapping_dict:
-            f.write(entry + ": " + mapping_dict[entry] + "\n")
+    for entry in mapping_dict:
+        out_file.write(entry + ": " + mapping_dict[entry] + "\n")
+
+def error_print(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)
+
 
 if __name__ == "__main__":
     main()
