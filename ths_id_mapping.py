@@ -19,7 +19,7 @@ from requests.auth import HTTPBasicAuth
 import json
 import time
 import click
-from datetime import datetime
+import sys
 
 # specify request handling parameters
 max_pseudonyms_per_request = 1000
@@ -57,7 +57,7 @@ transfer_id_length = 36
 def main(verbose, host, in_file, in_file_type, out_file, out_file_type, ssl_cert, ssl_key, bal_auth, bal_user, bal_pass, api_key, session_user_id, session_user_name, session_user_title, session_user_firstname, session_user_lastname, session_user_role, token_study_id, token_study_name, token_event, token_reason, token_target_type, patient_identifier_domain):
     
     # initialize config
-    config = {
+    ths_config = {
         "header": {
             "apiKey": api_key,
             "Content-Type": "application/json; charset=utf-8",
@@ -108,12 +108,15 @@ def main(verbose, host, in_file, in_file_type, out_file, out_file_type, ssl_cert
     elif in_file_type == "text":
         transfer_id_list = read_in_file_text(in_file)
 
-    mapping_dict = ths_get_psn_map(transfer_id_list,config)
+    mapping_dict = ths_get_psn_map(transfer_id_list,ths_config)
 
     if out_file_type == "json":
         write_out_file_json(mapping_dict, out_file)
     elif in_file_type == "text":
         write_out_file_text(mapping_dict, out_file)
+
+def error_print(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)
 
 def ths_post_request(url,json,config):
     if config["bal_auth"]:
@@ -130,10 +133,10 @@ def ths_session_request(config):
     r = ths_post_request(config["session_url"],config["session_params"],config)
 
     if config["verbose"]:
-        print("Session: ")
-        print("Status Code:", r.status_code)
-        #print(r.text)
-        print("------------------------\n")
+        error_print("Session: ")
+        error_print("Status Code:", r.status_code)
+        #error_print(r.text)
+        error_print("------------------------\n")
 
     session_info = r.json()
     session_id = session_info["sessionId"]
@@ -148,10 +151,10 @@ def ths_token_request(config, session_id):
     r = ths_post_request(path, config["token_params"], config)
 
     if config["verbose"]:
-        print("Token: ")
-        print("Status Code:", r.status_code)
-        #print(r.text)
-        print("------------------------\n")
+        error_print("Token: ")
+        error_print("Status Code:", r.status_code)
+        #error_print(r.text)
+        error_print("------------------------\n")
 
     token_info = r.json()
     token = token_info["tokenId"]
@@ -166,11 +169,11 @@ def ths_call_request_PSN(config, token, pm, counter):
     r = ths_post_request(path, pm, config)
 
     if config["verbose"]:
-        print("Request PSN:")
-        print("Status Code:", r.status_code)
-        print("Iteration number: ", counter+1)
-        #print(r.text)
-        print("------------------------\n")
+        error_print("Request PSN:")
+        error_print("Status Code:", r.status_code)
+        error_print("Iteration number: ", counter+1)
+        #error_print(r.text)
+        error_print("------------------------\n")
     
     psn_info = r.json()
         
@@ -250,9 +253,9 @@ def ths_get_psn_map(transfer_id_list, config):
 
             if psn_infos[0].status_code not in [200, 201, 202, 203, 204, 205, 206, 207, 208, 226]:
                 # wait specified amount of seconds
-                print("Sleep 3 seconds...")
+                error_print("Sleep 3 seconds...")
                 time.sleep(wait_after_fail)
-                print("wake up")
+                error_print("wake up")
 
             else:
                 request_successful = True
