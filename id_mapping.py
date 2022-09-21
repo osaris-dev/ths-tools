@@ -22,7 +22,7 @@ import click
 from datetime import datetime
 
 # specify request handling parameters
-max_pseudonyms_per_request = 100
+max_pseudonyms_per_request = 1000
 retries_before_fail = 5
 wait_after_fail = 3
 
