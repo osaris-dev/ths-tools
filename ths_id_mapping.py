@@ -132,7 +132,7 @@ def ths_session_request(config):
     if config["verbose"]:
         print("Session: ")
         print("Status Code:", r.status_code)
-        print(r.text)
+        #print(r.text)
         print("------------------------\n")
 
     session_info = r.json()
@@ -150,7 +150,7 @@ def ths_token_request(config, session_id):
     if config["verbose"]:
         print("Token: ")
         print("Status Code:", r.status_code)
-        print(r.text)
+        #print(r.text)
         print("------------------------\n")
 
     token_info = r.json()
@@ -169,10 +169,11 @@ def ths_call_request_PSN(config, token, pm, counter):
         print("Request PSN:")
         print("Status Code:", r.status_code)
         print("Iteration number: ", counter+1)
-        print(r.text)
+        #print(r.text)
         print("------------------------\n")
-
+    
     psn_info = r.json()
+        
     return [r, psn_info]
 
 
