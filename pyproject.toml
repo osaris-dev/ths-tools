@@ -32,7 +32,7 @@ requires = [
 build-backend = "setuptools.build_meta"
 
 [project.scripts]
-poetry = "ths_tools:ths_tools_cli"
+ths-tools = "ths_tools:ths_tools_cli"
 
 [tool.setuptools_scm]
 write_to = "ths_tools/_version.py"

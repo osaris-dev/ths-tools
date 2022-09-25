@@ -2,10 +2,11 @@ import json
 import click
 import sys
 from .ths import THS
+from ._version import version as __version__
 
 # cmd arguments
 @click.group()
-#@click.version_option()
+@click.version_option(__version__)
 @click.option('--verbose/--no-verbose', '-v', default=False, help='output debug information')
 @click.option('--ths-host', envvar='THS_HOST', default="test.ths.dzhk.med.uni-greifswald.de", help='Enter host name')
 @click.option('--ssl-cert', envvar='THS_SSL_CERT', help='name of user certificate (e.g. mmuster.crt)')
