@@ -6,3 +6,5 @@
 /patient_acc/mapping_test.json
 /test_transfer_ids/
 __pycache__
+/build
+/dist

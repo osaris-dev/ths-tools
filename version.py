@@ -51,9 +51,9 @@ def get_git_version(abbrev=7):
 
     # try to get the current git head
 
-    version += '-' + get_current_git_head(abbrev)
+    version += '+' + get_current_git_head(abbrev)
     if is_dirty():
-        version += "-dirty-" + str(time.time())
+        version += "-dirty" + str(int(time.time()))
 
 
     return version
