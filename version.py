@@ -20,7 +20,7 @@ def get_current_git_head(abbrev):
 
 def is_dirty():
     try:
-        p = Popen(["git", "diff-index", "--name-only", "HEAD"],
+        p = Popen(["git", "diff", "--stat"],
                   stdout=PIPE, stderr=PIPE)
         p.stderr.close()
         lines = p.stdout.readlines()
