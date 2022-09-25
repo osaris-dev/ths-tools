@@ -1,7 +1,7 @@
 import json
 import click
 import sys
-from ths import THS
+from .ths import THS
 
 # cmd arguments
 @click.command()
@@ -29,7 +29,7 @@ from ths import THS
 @click.option('--token-reason', envvar='THS_TOKEN_REASON', default="acc_temp_merge")
 @click.option('--token-target_type', envvar='THS_TOKEN_TARGET_TYPE', default="accounting")
 @click.option('--patient-identifier-domain', envvar='THS_PATIENT_IDENTIFIER_DOMAIN', default="temp")
-def main(verbose, host, in_file, in_file_type, out_file, out_file_type, ssl_cert, ssl_key, bal_auth, bal_user, bal_pass, api_key, session_user_id, session_user_name, session_user_title, session_user_firstname, session_user_lastname, session_user_role, token_study_id, token_study_name, token_event, token_reason, token_target_type, patient_identifier_domain):
+def ths_tools_cli(verbose, host, in_file, in_file_type, out_file, out_file_type, ssl_cert, ssl_key, bal_auth, bal_user, bal_pass, api_key, session_user_id, session_user_name, session_user_title, session_user_firstname, session_user_lastname, session_user_role, token_study_id, token_study_name, token_event, token_reason, token_target_type, patient_identifier_domain):
     
     # initialize config
     ths_config = {
