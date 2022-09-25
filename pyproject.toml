@@ -1,0 +1,38 @@
+[project]
+name = "ths_tools"
+description = "Tools for interacting with the API of the Treuhandstelle Greifswald"
+authors = [
+    {name = "Markus Brechtel", email="markus.brechtel@uk-koeln.de"},
+    {name = "Nils Tulke"},
+    {name = "Robert Martincevic"},
+]
+license = {file = "LICENSE"}
+readme = "README.md"
+requires-python = ">=3.6"
+
+# Requirements: This is done differently by poetry!
+dependencies = [
+    "requests >= 2.25",
+    "pandas >= 1",
+    "click >= 7"
+]
+
+dynamic = ["version"]
+
+[project.urls]
+homepage = "https://github.com/osaris-dev/ths-tools"
+#documentation = ""
+repository = "https://github.com/osaris-dev/ths-tools"
+
+[build-system]
+requires = [
+    "setuptools >= 35.0.2",
+    "setuptools_scm >= 5.0.0"
+]
+build-backend = "setuptools.build_meta"
+
+[project.scripts]
+poetry = "ths_tools:ths_tools_cli"
+
+[tool.setuptools_scm]
+write_to = "ths_tools/_version.py"
