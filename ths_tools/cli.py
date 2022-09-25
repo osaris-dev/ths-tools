@@ -3,12 +3,11 @@ import click
 import sys
 from .ths import THS
 
-
 # cmd arguments
 @click.group()
 #@click.version_option()
 @click.option('--verbose/--no-verbose', '-v', default=False, help='output debug information')
-@click.option('--ths-host', envvar='THS_HOST', default="basic-test.ths.dzhk.med.uni-greifswald.de", help='Enter host name')
+@click.option('--ths-host', envvar='THS_HOST', default="test.ths.dzhk.med.uni-greifswald.de", help='Enter host name')
 @click.option('--ssl-cert', envvar='THS_SSL_CERT', help='name of user certificate (e.g. mmuster.crt)')
 @click.option('--ssl-key', envvar='THS_SSL_KEY', help='name of user certificate (e.g. mmuster-decrypted.key)')
 @click.option('--bal-user', envvar='THS_BAL_USER', default=None, help='THS BAL username')
@@ -63,6 +62,14 @@ def ths_tools_cli(verbose, ssl_cert, ssl_key, ths_host, bal_user, bal_pass, ths_
         # PSN request information
         patient_identifier_domain=patient_identifier_domain
     )
+
+@ths_tools_cli.command()
+def test_auth():
+    print("Testing connection with THS Host:", ths.ths_host)
+    session_id = ths.ths_session_request()
+    print("Got THS Session ID:",session_id)
+    token = ths.ths_token_request(session_id)
+    print("Got THS Token ID:",token)
 
 @ths_tools_cli.command()
 @click.option('--in-file', type=click.File('r'), default=sys.stdin, help='input file with PSNs')

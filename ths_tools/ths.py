@@ -77,6 +77,9 @@ class THS:
             #error_print(r.text)
             error_print("------------------------\n")
 
+        if r.status_code != 201:
+            raise Exception(f"THS Session Request: Invalid response {r.status_code} from server.")
+
         session_info = r.json()
         session_id = session_info["sessionId"]
 
@@ -94,6 +97,9 @@ class THS:
             error_print("Status Code:", r.status_code)
             #error_print(r.text)
             error_print("------------------------\n")
+
+        if r.status_code != 201:
+            raise Exception(f"THS Token Request: Invalid response {r.status_code} from server.")
 
         token_info = r.json()
         token = token_info["tokenId"]
