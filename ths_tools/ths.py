@@ -9,26 +9,69 @@ class THS:
     retries_before_fail = 5
     wait_after_fail = 3
 
-    def __init__(self, config):
-        self.config = config
+    def __init__(self, ths_host, ths_api_key, ssl_cert, ssl_key, session_user_id, session_user_name, session_user_title, session_user_firstname, session_user_lastname, session_user_role, token_study_id, token_study_name, token_event, token_reason, token_target_type, patient_identifier_domain, bal_user=False, bal_pass=False, verbose=False):
 
-        if self.config["bal_auth"]:
-            self.auth=HTTPBasicAuth(self.config["bal_user"], self.config["bal_pass"])
+        self.verbose = verbose
+
+        if bal_user and bal_pass:
+            self.auth=HTTPBasicAuth(bal_user, bal_pass)
         else:
             self.auth=None
 
+        self.cert = (ssl_cert, ssl_key)
+
+        self.header =  {
+            "apiKey": ths_api_key,
+            "Content-Type": "application/json; charset=utf-8",
+        }
+
+        self.ths_host = ths_host
+
+        self.session_url = f"https://{ths_host}/dzhk/rest/sessions/"
+        self.session_params = {
+            "data":
+                {
+                    "fields":
+                        {
+                            "user_id": session_user_id,
+                            "user_name": session_user_name,
+                            "user_title": session_user_title,
+                            "user_firstname": session_user_firstname,
+                            "user_lastname": session_user_lastname,
+                            "user_role": session_user_role
+                        }
+                }
+        }
+        self.token_params = {
+            "type": "requestPSN",
+            "method": "getOrCreate",
+            "data":
+                {
+                    "fields":
+                        {
+                            "study_id": token_study_id,
+                            "study_name": token_study_name,
+                            "event": token_event,
+                            "reason": token_reason,
+                            "targetType": token_target_type
+                        }
+                }
+        }
+
+        self.psn_request_url = f"https://{ths_host}/dzhk/rest/psn/request/"
+        self.patient_identifier_domain = patient_identifier_domain
 
     def ths_post_request(self,url,json):
         return requests.post(url,
-                        cert=(self.config["ssl_cert"], self.config["ssl_key"]),
+                        cert=self.cert,
                         auth=self.auth, verify=True,
-                        headers=self.config["header"], json=json)
+                        headers=self.header, json=json)
 
     def ths_session_request(self):
         # Making a post request
-        r = self.ths_post_request(self.config["session_url"], self.config["session_params"])
+        r = self.ths_post_request(self.session_url, self.session_params)
 
-        if self.config["verbose"]:
+        if self.verbose:
             error_print("Session: ")
             error_print("Status Code:", r.status_code)
             #error_print(r.text)
@@ -41,12 +84,12 @@ class THS:
 
 
     def ths_token_request(self,session_id):
-        path = self.config["session_url"] + session_id + "/tokens"
+        path = self.session_url + session_id + "/tokens"
 
         # Making a post request
-        r = self.ths_post_request(path, self.config["token_params"])
+        r = self.ths_post_request(path, self.token_params)
 
-        if self.config["verbose"]:
+        if self.verbose:
             error_print("Token: ")
             error_print("Status Code:", r.status_code)
             #error_print(r.text)
@@ -59,12 +102,12 @@ class THS:
 
 
     def ths_call_request_PSN(self, token, pm, counter):
-        path = self.config["psn_request_url"] + token
+        path = self.psn_request_url + token
 
         # Making a post request
         r = self.ths_post_request(path, pm)
 
-        if self.config["verbose"]:
+        if self.verbose:
             error_print("Request PSN:")
             error_print("Status Code:", r.status_code)
             error_print("Iteration number: ", counter+1)
@@ -96,7 +139,7 @@ class THS:
                 patients.append({
                             "index": patient_counter,
                             "patientIdentifier": {
-                                "domain": self.config["patient_identifier_domain"],
+                                "domain": self.patient_identifier_domain,
                                 "name": "PSN",
                                 "id": id,
                                 "type": "patientPSN"
