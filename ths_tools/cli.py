@@ -2,7 +2,13 @@ import json
 import click
 import sys
 from .ths import THS
-from ._version import version as __version__
+
+# import version info
+try:
+    from ._version import version as __version__
+except ImportError or ModuleNotFoundError:
+    __version__ = "dev"
+
 
 # cmd arguments
 @click.group()
@@ -34,11 +40,11 @@ def ths_tools_cli(verbose, ssl_cert, ssl_key, ths_host, bal_user, bal_pass, ths_
         verbose=verbose,
 
         # connection information
-        ths_host=ths_host, 
+        ths_host=ths_host,
         ths_api_key=ths_api_key,
 
         # certificate information
-        ssl_cert=ssl_cert, 
+        ssl_cert=ssl_cert,
         ssl_key=ssl_key,
 
         # authentication information
@@ -46,7 +52,7 @@ def ths_tools_cli(verbose, ssl_cert, ssl_key, ths_host, bal_user, bal_pass, ths_
         bal_pass=bal_pass,
 
         # session information
-        session_user_id=session_user_id, 
+        session_user_id=session_user_id,
         session_user_name=session_user_name,
         session_user_title=session_user_title,
         session_user_firstname=session_user_firstname,
@@ -57,7 +63,7 @@ def ths_tools_cli(verbose, ssl_cert, ssl_key, ths_host, bal_user, bal_pass, ths_
         token_study_id=token_study_id,
         token_study_name=token_study_name,
         token_event=token_event,
-        token_reason=token_reason, 
+        token_reason=token_reason,
         token_target_type=token_target_type,
 
         # PSN request information
@@ -112,7 +118,7 @@ def map_psn_list(in_file, in_file_type, out_file, out_file_type):
 @click.option('--target-psn-column', help='new column with mapped PSNs ')
 @click.option('--drop-source-psn-column/--no-drop-source-psn-column', default=True, help='drop column with PSNs to map (if they are not identical)')
 def table_psn_mapper(in_file, in_file_type, in_file_json_orient, in_file_csv_encoding, in_file_csv_sep, out_file, out_file_type, out_file_json_orient, out_file_csv_encoding, out_file_csv_sep, source_psn_column, target_psn_column, drop_source_psn_column):
-    
+
     import pandas
 
     if in_file_type == "json":
@@ -139,4 +145,3 @@ def table_psn_mapper(in_file, in_file_type, in_file_json_orient, in_file_csv_enc
         table.to_excel(out_file)
     else:
         raise Exception(f"No valid output file type has been specified!")
-
