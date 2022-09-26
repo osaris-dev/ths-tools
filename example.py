@@ -6,16 +6,16 @@ def main():
         verbose=True,
 
         # connection information
-        ths_host="basic-test.ths.dzhk.med.uni-greifswald.de",
+        ths_host="test.ths.dzhk.med.uni-greifswald.de",
         ths_api_key="accounting.test.abc123",
 
         # certificate information
         ssl_cert="ths-test.crt",
         ssl_key="ths-test.key",
 
-        # authentication information
-        bal_user="my_user_name",
-        bal_pass="my_password_123",
+        # authentication information (uncomment if using Basic Auth)
+        #bal_user="my_user_name",
+        #bal_pass="my_password_123",
 
         # session information
         session_user_id="test",
