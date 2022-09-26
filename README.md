@@ -63,5 +63,40 @@ export THS_PATIENT_IDENTIFIER_DOMAIN=temp
 ths-tools -v map-psn-list --in-file Downloads/test-transfer-ids-20220919.txt --in-file-type text --out-file-type text
 ```
 
+The table-psn-mapper takes a table as input and output and maps a specified source column to a target column.
+
+```
+Usage: ths-tools table-psn-mapper [OPTIONS]
+
+Options:
+  --in-file PATH                  input file with PSNs
+  --in-file-type [json|csv|xlsx]  input file type
+  --in-file-json-orient TEXT      input file json structure (pandas orient
+                                  flag)
+
+  --in-file-csv-encoding TEXT     input file type
+  --in-file-csv-sep TEXT          input file CSV seperator
+  --out-file PATH                 output file with mapping
+  --out-file-type [json|csv|xlsx]
+                                  output file type
+  --out-file-json-orient TEXT     output file json structure (pandas orient
+                                  flag)
+
+  --out-file-csv-encoding TEXT    output file type
+  --out-file-csv-sep TEXT         output file CSV seperator
+  --source-psn-column TEXT        column with PSNs to map
+  --target-psn-column TEXT        new column with mapped PSNs
+  --drop-source-psn-column / --no-drop-source-psn-column
+                                  drop column with PSNs to map (if they are
+                                  not identical)
+
+  --help                          Show this message and exit.
+```
+Example:
+
+```
+ths-tools -v table-psn-mapper --in-file test.csv --in-file-type csv --out-file test-mapped.csv --out-file-type csv --source-psn-column source_psn --target-psn-column target_psn
+```
+
 # Use the Python Class
 After installing the Package with Pip you can use the THS class. See example.py.
