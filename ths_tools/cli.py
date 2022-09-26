@@ -5,7 +5,7 @@ from .ths import THS
 
 # import version info
 try:
-    from ._version import version as __version__
+    from ._version import version as __version__ # type: ignore
 except ImportError or ModuleNotFoundError:
     __version__ = "dev"
 
