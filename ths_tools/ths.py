@@ -72,15 +72,15 @@ class THS:
         r = self.ths_post_request(self.session_url, self.session_params)
 
         if self.verbose:
-            error_print("Session: ")
-            error_print("Status Code:", r.status_code)
-            #error_print(r.text)
+            error_print("THS Session Request:", r, r.text)
             error_print("------------------------\n")
 
         if r.status_code != 201:
             raise Exception(f"THS Session Request: Invalid response {r.status_code} from server.")
 
         session_info = r.json()
+
+
         session_id = session_info["sessionId"]
 
         return session_id
@@ -93,9 +93,7 @@ class THS:
         r = self.ths_post_request(path, self.token_params)
 
         if self.verbose:
-            error_print("Token: ")
-            error_print("Status Code:", r.status_code)
-            #error_print(r.text)
+            error_print("THS Token Request:", r, r.text)
             error_print("------------------------\n")
 
         if r.status_code != 201:
@@ -114,10 +112,7 @@ class THS:
         r = self.ths_post_request(path, pm)
 
         if self.verbose:
-            error_print("Request PSN:")
-            error_print("Status Code:", r.status_code)
-            error_print("Iteration number: ", counter+1)
-            #error_print(r.text)
+            error_print("Request PSN:", counter, r, r.text )
             error_print("------------------------\n")
         
         psn_info = r.json()
