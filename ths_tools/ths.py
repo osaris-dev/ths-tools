@@ -206,8 +206,7 @@ class THS:
                         mapping_dict_chunk[pat_identifier] = None
                 else:
                     try:
-                        psn_info_json = psn_infos.json()
-                        for patient in psn_info_json["patients"]:
+                        for patient in psn_infos_json["patients"]:
                             pat_identifier = patient["patientIdentifier"]["id"]
                             target_id = patient["targetId"]
                             mapping_dict_chunk[pat_identifier] = target_id
