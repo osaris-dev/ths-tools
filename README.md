@@ -35,8 +35,11 @@ ths-tools -v \
     --token-reason acc_temp_merge \
     --token-target_type accounting \
     --patient-identifier-domain temp \
+    --no-accept-missing-target-id \
     map-psn-list --in-file Downloads/test-transfer-ids-20220919.txt --in-file-type text --out-file-type text
 ```
+
+
 
 You can also put the arguments in environment variables, for example with a bash shell you can do:
 
@@ -105,5 +108,5 @@ After installing the Package with Pip you can use the THS class. See example.py.
 ## Release new version
 ```
 NEW_VERSION=0.x.y
-git checkout main && git merge dev && git tag $NEW_VERSION; git push origin; git push origin --tags; git push github; git push github --tags; git checkout dev
+git checkout main && git merge dev && git tag $NEW_VERSION; git push origin; git push origin --tags; git push github; git push github --tags; git checkout dev; git push origin; git push github
 ```
