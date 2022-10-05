@@ -35,8 +35,11 @@ ths-tools -v \
     --token-reason acc_temp_merge \
     --token-target_type accounting \
     --patient-identifier-domain temp \
+    --no-accept-missing-target-id \
     map-psn-list --in-file Downloads/test-transfer-ids-20220919.txt --in-file-type text --out-file-type text
 ```
+
+
 
 You can also put the arguments in environment variables, for example with a bash shell you can do:
 
