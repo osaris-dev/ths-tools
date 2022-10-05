@@ -9,7 +9,7 @@ class THS:
     retries_before_fail = 5
     wait_after_fail = 3
 
-    def __init__(self, ths_host, ths_api_key, ssl_cert, ssl_key, session_user_id, session_user_name, session_user_title, session_user_firstname, session_user_lastname, session_user_role, token_study_id, token_study_name, token_event, token_reason, token_target_type, patient_identifier_domain, bal_user=False, bal_pass=False, verbose=False):
+    def __init__(self, ths_host, ths_api_key, ssl_cert, ssl_key, session_user_id, session_user_name, session_user_title, session_user_firstname, session_user_lastname, session_user_role, token_study_id, token_study_name, token_event, token_reason, token_target_type, patient_identifier_domain, proxies, bal_user=False, bal_pass=False, verbose=False):
 
         self.verbose = verbose
 
@@ -60,17 +60,18 @@ class THS:
 
         self.psn_request_url = f"https://{ths_host}/dzhk/rest/psn/request/"
         self.patient_identifier_domain = patient_identifier_domain
+        self.proxies = proxies
 
     def ths_post_request(self,url,json):
         return requests.post(url,
                         cert=self.cert,
                         auth=self.auth, verify=True,
-                        headers=self.header, json=json)
+                        headers=self.header, json=json, proxies=self.proxies)
 
     def ths_session_request(self):
         # Making a post request
         r = self.ths_post_request(self.session_url, self.session_params)
-
+      #  print(r.text)
         if self.verbose:
             error_print("Session: ")
             error_print("Status Code:", r.status_code)
@@ -119,9 +120,9 @@ class THS:
             error_print("Iteration number: ", counter+1)
             #error_print(r.text)
             error_print("------------------------\n")
-        
+
         psn_info = r.json()
-            
+
         return [r, psn_info]
 
     def ths_get_psn_map(self, transfer_id_list):
@@ -181,10 +182,16 @@ class THS:
 
             # loop through temporary json response file (containing current chunk of patients)
             # mapping transfer IDs to target IDs
+
             for patient in psn_infos[1]["patients"]:
+
+
                 pat_identifier = patient["patientIdentifier"]["id"]
-                target_id = patient["targetId"]
-                mapping_dict_chunk[pat_identifier] = target_id
+                if 'targetId' in patient:
+                    target_id = patient["targetId"]
+                    mapping_dict_chunk[pat_identifier] = target_id
+                else:
+                    mapping_dict_chunk[pat_identifier] = 'nan'
 
             # append dictionary created out of current chunk to dictionary list
             dict_list.append(mapping_dict_chunk)
