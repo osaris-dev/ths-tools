@@ -101,7 +101,7 @@ def map_psn_list(in_file, in_file_type, out_file, out_file_type):
         json.dump(mapping_dict, out_file, indent=2)
     elif in_file_type == "text":
         for entry in mapping_dict:
-            out_file.write(entry + ": " + mapping_dict[entry] + "\n")
+            out_file.write(entry + ": " + str(mapping_dict[entry]) + "\n")
 
 @ths_tools_cli.command()
 @click.option('--in-file', type=click.Path(), help='input file with PSNs')
