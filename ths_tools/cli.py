@@ -32,7 +32,8 @@ except ImportError or ModuleNotFoundError:
 @click.option('--token-reason', envvar='THS_TOKEN_REASON', required=True)
 @click.option('--token-target_type', envvar='THS_TOKEN_TARGET_TYPE', required=True)
 @click.option('--patient-identifier-domain', envvar='THS_PATIENT_IDENTIFIER_DOMAIN', required=True)
-def ths_tools_cli(verbose, ssl_cert, ssl_key, ths_host, bal_user, bal_pass, ths_api_key, session_user_id, session_user_name, session_user_title, session_user_firstname, session_user_lastname, session_user_role, token_study_id, token_study_name, token_event, token_reason, token_target_type, patient_identifier_domain):
+@click.option('--accept-missing-target-id/--no-accept-missing-target-id', '-v', default=False, help='output debug information')
+def ths_tools_cli(verbose, ssl_cert, ssl_key, ths_host, bal_user, bal_pass, ths_api_key, session_user_id, session_user_name, session_user_title, session_user_firstname, session_user_lastname, session_user_role, token_study_id, token_study_name, token_event, token_reason, token_target_type, patient_identifier_domain, accept_missing_target_id):
 
     global ths
     ths = THS(
@@ -67,7 +68,8 @@ def ths_tools_cli(verbose, ssl_cert, ssl_key, ths_host, bal_user, bal_pass, ths_
         token_target_type=token_target_type,
 
         # PSN request information
-        patient_identifier_domain=patient_identifier_domain
+        patient_identifier_domain=patient_identifier_domain,
+        accept_missing_target_id=accept_missing_target_id
     )
 
 @ths_tools_cli.command()
