@@ -9,7 +9,7 @@ class THS:
     retries_before_fail = 5
     wait_after_fail = 3
 
-    def __init__(self, ths_host, ths_api_key, ssl_cert, ssl_key, session_user_id, session_user_name, session_user_title, session_user_firstname, session_user_lastname, session_user_role, token_study_id, token_study_name, token_event, token_reason, token_target_type, patient_identifier_domain, proxies, bal_user=False, bal_pass=False, verbose=False):
+    def __init__(self, ths_host, ths_api_key, ssl_cert, ssl_key, session_user_id, session_user_name, session_user_title, session_user_firstname, session_user_lastname, session_user_role, token_study_id, token_study_name, token_event, token_reason, token_target_type, patient_identifier_domain, proxies, bal_user=False, bal_pass=False, verbose=False, accept_missing_target_id=False):
 
         self.verbose = verbose
 
@@ -35,13 +35,18 @@ class THS:
                         {
                             "user_id": session_user_id,
                             "user_name": session_user_name,
-                            "user_title": session_user_title,
-                            "user_firstname": session_user_firstname,
-                            "user_lastname": session_user_lastname,
-                            "user_role": session_user_role
                         }
                 }
         }
+        if session_user_title:
+            self.session_params['data']['fields']['user_title'] = session_user_title
+        if session_user_firstname:
+            self.session_params['data']['fields']['user_firstname'] = session_user_firstname
+        if session_user_lastname:
+            self.session_params['data']['fields']['user_lastname'] = session_user_lastname
+        if session_user_role:
+            self.session_params['data']['fields']['user_role'] = session_user_role
+
         self.token_params = {
             "type": "requestPSN",
             "method": "getOrCreate",
@@ -60,6 +65,9 @@ class THS:
 
         self.psn_request_url = f"https://{ths_host}/dzhk/rest/psn/request/"
         self.patient_identifier_domain = patient_identifier_domain
+
+        self.accept_missing_target_id = accept_missing_target_id
+
         self.proxies = proxies
 
     def ths_post_request(self,url,json):
@@ -71,17 +79,16 @@ class THS:
     def ths_session_request(self):
         # Making a post request
         r = self.ths_post_request(self.session_url, self.session_params)
-      #  print(r.text)
         if self.verbose:
-            error_print("Session: ")
-            error_print("Status Code:", r.status_code)
-            #error_print(r.text)
+            error_print("THS Session Request:", r, r.text)
             error_print("------------------------\n")
 
         if r.status_code != 201:
-            raise Exception(f"THS Session Request: Invalid response {r.status_code} from server.")
+            raise Exception(f"THS Session Request: Invalid response from server: {r} {r.text}")
 
         session_info = r.json()
+
+
         session_id = session_info["sessionId"]
 
         return session_id
@@ -94,13 +101,11 @@ class THS:
         r = self.ths_post_request(path, self.token_params)
 
         if self.verbose:
-            error_print("Token: ")
-            error_print("Status Code:", r.status_code)
-            #error_print(r.text)
+            error_print("THS Token Request:", r, r.text)
             error_print("------------------------\n")
 
         if r.status_code != 201:
-            raise Exception(f"THS Token Request: Invalid response {r.status_code} from server.")
+            raise Exception(f"THS Token Request: Invalid response from server: {r} {r.text}")
 
         token_info = r.json()
         token = token_info["tokenId"]
@@ -115,15 +120,10 @@ class THS:
         r = self.ths_post_request(path, pm)
 
         if self.verbose:
-            error_print("Request PSN:")
-            error_print("Status Code:", r.status_code)
-            error_print("Iteration number: ", counter+1)
-            #error_print(r.text)
+            error_print("Request PSN:", counter, r, r.text )
             error_print("------------------------\n")
 
-        psn_info = r.json()
-
-        return [r, psn_info]
+        return r
 
     def ths_get_psn_map(self, transfer_id_list):
 
@@ -164,9 +164,10 @@ class THS:
                 token = self.ths_token_request(session_id)
                 psn_infos = self.ths_call_request_PSN(token, pm, request_counter)
 
+
                 i += 1
 
-                if psn_infos[0].status_code not in [200, 201, 202, 203, 204, 205, 206, 207, 208, 226]:
+                if psn_infos.status_code not in [200, 201, 202, 203, 204, 205, 206, 207, 208, 226]:
                     # wait specified amount of seconds
                     error_print("Sleep 3 seconds...")
                     time.sleep(self.wait_after_fail)
@@ -178,25 +179,33 @@ class THS:
                     break
 
             if not request_successful:
-                raise Exception(f"Request not successful after {self.retries_before_fail} retries")
+                raise Exception(f"Request not successful after {self.retries_before_fail} retries. Last response: {psn_infos} {psn_infos.text}")
 
             # loop through temporary json response file (containing current chunk of patients)
             # mapping transfer IDs to target IDs
-
             for patient in psn_infos[1]["patients"]:
 
-
-                pat_identifier = patient["patientIdentifier"]["id"]
-                if 'targetId' in patient:
-                    target_id = patient["targetId"]
-                    mapping_dict_chunk[pat_identifier] = target_id
+                if self.accept_missing_target_id:
+                    pat_identifier = patient["patientIdentifier"]["id"]
+                    if 'targetId' in patient:
+                        target_id = patient["targetId"]
+                        mapping_dict_chunk[pat_identifier] = target_id
+                    else:
+                        mapping_dict_chunk[pat_identifier] = Null
                 else:
-                    mapping_dict_chunk[pat_identifier] = 'nan'
+                    try:
+                        psn_info_json = psn_infos.json()
+                        for patient in psn_info_json["patients"]:
+                            pat_identifier = patient["patientIdentifier"]["id"]
+                            target_id = patient["targetId"]
+                            mapping_dict_chunk[pat_identifier] = target_id
+                    except:
+                        raise Exception(f"THS Get PSN Map: Could not unpack patient targetId. Got response: {psn_infos} {psn_infos.text} ")
 
-            # append dictionary created out of current chunk to dictionary list
-            dict_list.append(mapping_dict_chunk)
+                # append dictionary created out of current chunk to dictionary list
+                dict_list.append(mapping_dict_chunk)
 
-            request_counter += 1
+                request_counter += 1
 
         # create overall mapping dictionary
         return zip_dictionaries(dict_list)

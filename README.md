@@ -100,3 +100,10 @@ ths-tools -v table-psn-mapper --in-file test.csv --in-file-type csv --out-file t
 
 # Use the Python Class
 After installing the Package with Pip you can use the THS class. See example.py.
+
+# Development
+## Release new version
+```
+NEW_VERSION=0.x.y
+git checkout main && git merge dev && git tag $NEW_VERSION; git push origin; git push origin --tags; git push github; git push github --tags; git checkout dev
+```
