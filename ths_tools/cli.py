@@ -87,9 +87,7 @@ def map_psn_list(in_file, in_file_type, out_file, out_file_type):
     if in_file_type == "json":
         id_list = json.load(in_file)
     elif in_file_type == "text":
-        txt_string = in_file.read()
-
-        id_list = txt_string.split("\n")
+        id_list = in_file.read().splitlines() 
 
         for entry in id_list:
             if len(entry) == 0:
