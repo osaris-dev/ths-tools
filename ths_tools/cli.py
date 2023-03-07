@@ -145,3 +145,14 @@ def table_psn_mapper(in_file, in_file_type, in_file_json_orient, in_file_csv_enc
         table.to_excel(out_file)
     else:
         raise Exception(f"No valid output file type has been specified!")
+
+@ths_tools_cli.command()
+@click.argument('in_files', nargs=-1, type=click.Path(exists=True))
+@click.option('--out-file', type=click.File('w'), default=sys.stdout, help='output file with mapping')
+def merge_psn_maps(in_files, out_file):
+    transfer_map = {}
+    for in_file in in_files:
+        with open(in_file, 'r') as f:
+            transfer_map.update(json.load(f))
+    
+    json.dump(transfer_map, out_file, indent=2)

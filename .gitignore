@@ -10,3 +10,4 @@ __pycache__
 /dist
 _version.py
 /.idea
+*.egg-info
