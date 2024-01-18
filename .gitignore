@@ -11,3 +11,4 @@ __pycache__
 _version.py
 /.idea
 *.egg-info
+.venv
